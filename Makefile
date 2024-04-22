@@ -3,7 +3,7 @@ test-framework:
 	swift test
 
 
-ExampleTargets := "CounterExamplesTests" "TodoExampleTests" "PagingListExampleTests"
+ExampleTargets := "CounterExampleTests" "TodoExampleTests" "PagingListExampleTests"
 
 .PHONY: test-examples
 test-examples:
