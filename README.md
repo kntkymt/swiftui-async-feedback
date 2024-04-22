@@ -55,6 +55,8 @@ struct CounterScreenSystem: SystemProtocol {
 }
 ```
 
+- just use `@ViewContext` and start feedback loop by `await _context.runFeedbackLoop()`.
+
 ```swift
 import SwiftUI
 
