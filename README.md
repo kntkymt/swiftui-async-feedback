@@ -4,7 +4,7 @@ Unidirectional Reactive Architecture for SwiftUI. This is a Swift Concurrency im
 
 | Swift Concurrency | No custom Views | easy Binding |
 | - | - | - |
-| Native-support of async-await` and `Sendable`. No `Combine`. | No custom Views, only use `@ViewContext` property. | `Feedback` can react the change via `Binding` that pass to SwiftUI components such as `TextField(text: Binding<String>)`. |
+| Native-support of async-await and `Sendable`. No `Combine`. | No custom Views, only use `@ViewContext` property. | `Feedback` can react the change via `Binding` that pass to SwiftUI components such as `TextField(text: Binding<String>)`. |
 
 # Quick Overview
 
