@@ -91,4 +91,4 @@ struct CounterScreen: View {
 
 | [Counter](Example/Package/Sources/CounterExample/) | [Todo](Example/Package/Sources/TodoExample/) | [Paging](Example/Package/Sources/PagingListExample/) |
 | - | - | - |
-| ![](assets/CounterExample.jpeg)|![](assets/TodoExample.jpeg)|![](assets/PagingListExample.jpeg)|
+| <img width=300 src="assets/CounterExample.jpeg">| <img width=300 src="assets/TodoExample.jpeg">|<img width=300 src="assets/PagingListExample.jpeg">|
