@@ -4,7 +4,7 @@ Unidirectional Reactive Architecture for SwiftUI. This is a Swift Concurrency im
 
 | Swift Concurrency | No custom Views | easy Binding |
 | - | - | - |
-| Written in `AsyncStream` and support `Sendable`. | No custom Views, only use `@ViewContext` property. | `Feedback` can react the change via `Binding` that pass to SwiftUI components such as `TextField(text: Binding<String>)`. |
+| Native-support of async-await` and `Sendable`. No `Combine`. | No custom Views, only use `@ViewContext` property. | `Feedback` can react the change via `Binding` that pass to SwiftUI components such as `TextField(text: Binding<String>)`. |
 
 # Quick Overview
 
@@ -94,3 +94,37 @@ struct CounterScreen: View {
 | [Counter](Example/Package/Sources/CounterExample/) | [Todo](Example/Package/Sources/TodoExample/) | [Paging](Example/Package/Sources/PagingListExample/) |
 | - | - | - |
 | <img width=300 src="assets/CounterExample.jpeg">| <img width=300 src="assets/TodoExample.jpeg">|<img width=300 src="assets/PagingListExample.jpeg">|
+
+# Test Support
+
+```swift
+import XCTest
+import AsyncFeedback
+import AsyncFeedbackTestSupport
+
+final class CounterScreenSystemTests: XCTestCase {
+
+    @MainActor
+    func testWhenCountIsMultipleOf3() async {
+        let context = TestContext(
+            state: CounterScreenSystem.State(),
+            system: CounterScreenSystem()
+        )
+
+        await context
+            .check { state in
+                XCTAssertEqual(state.count, 1)
+                XCTAssertNil(state.message)
+            }
+            .run()
+            .do {
+                context.eventBinding.count.wrappedValue = 3
+            }
+            .suspend(while: context.state.message == nil)
+            .check { state in
+                XCTAssertEqual(state.message, "multiple of 3!!")
+            }
+            .finish()
+    }
+}
+```
