@@ -30,7 +30,7 @@ let package = Package(
         ),
         .testTarget(
             name: "AsyncFeedbackTests",
-            dependencies: ["AsyncFeedback"]
+            dependencies: ["AsyncFeedback", "AsyncFeedbackTestSupport"]
         ),
         .target(
             name: "AsyncFeedbackTestSupport",

@@ -5,7 +5,7 @@ import SwiftUI
 final class ContextTests: XCTestCase {
 
     @MainActor
-    func testFeedbackReactToInitialState() async {
+    func testFeedbackReactToInitialState() async throws {
         let system = TestSystem()
         let context = Context(system: system)
 
@@ -21,9 +21,9 @@ final class ContextTests: XCTestCase {
             await context.runFeedbackLoop(state: binding)
         }
 
-        for _ in 0..<100 {
-            await Task.yield()
-        }
+        // wait feedback react to initialState
+        try await system.clock.sleep(untilSuspendBy: system.clock.getAutoId(index: 0))
+        try await system.clock.sleep(untilSuspendBy: system.clock.getAutoId(index: 1))
 
         let f1 = await system.feedbackCall1.value
         let f2 = await system.feedbackCall2.value
@@ -86,9 +86,35 @@ final class ContextTests: XCTestCase {
             await context.runFeedbackLoop(state: binding)
         }
 
-        for _ in 0..<100 {
-            await Task.yield()
+        // wait feedback react to initialState
+        try await system.clock.sleep(untilSuspendBy: system.clock.getAutoId(index: 0))
+        try await system.clock.sleep(untilSuspendBy: system.clock.getAutoId(index: 1))
+
+        do {
+            let f1 = await system.feedbackCall1.value
+            let f2 = await system.feedbackCall2.value
+            let r = await system.reducerCall.value
+
+            // initialState
+            XCTAssertEqual(f1, [initialState])
+            XCTAssertEqual(f2, [initialState])
+
+
+            // FIXME: make Reducer async so that we could test using clock.sleep?
+            // manual event trigger reducer before feedback react to initialState
+            XCTAssertEqual(r.count, 1)
+
+            let (s, e) = try XCTUnwrap(r.first)
+
+            XCTAssertEqual(s, initialState)
+            XCTAssertEqual(e, event)
         }
+
+        system.clock.advance(by: .seconds(1))
+
+        // wait feedback react to changed state by reducer via manual event
+        try await system.clock.sleep(untilSuspendBy: system.clock.getAutoId(index: 2))
+        try await system.clock.sleep(untilSuspendBy: system.clock.getAutoId(index: 3))
 
         do {
             let f1 = await system.feedbackCall1.value
@@ -112,7 +138,7 @@ final class ContextTests: XCTestCase {
     }
 
     @MainActor
-    func testContextCancelAndRunAgain() async {
+    func testContextCancelAndRunAgain() async throws {
         let system = TestSystem()
         let context = Context(system: system)
 
@@ -128,9 +154,9 @@ final class ContextTests: XCTestCase {
             await context.runFeedbackLoop(state: binding)
         }
 
-        for _ in 0..<100 {
-            await Task.yield()
-        }
+        // wait feedback react to initialState
+        try await system.clock.sleep(untilSuspendBy: system.clock.getAutoId(index: 0))
+        try await system.clock.sleep(untilSuspendBy: system.clock.getAutoId(index: 1))
 
         do {
             let f1 = await system.feedbackCall1.value
@@ -154,7 +180,7 @@ final class ContextTests: XCTestCase {
         }
 
         do {
-            // if run context again after canceled at once, context will not send iniatialState.
+            // if run context again after canceled at once, context will not send iniatialState again.
             let f1 = await system.feedbackCall1.value
             let f2 = await system.feedbackCall2.value
             let r = await system.reducerCall.value
@@ -171,7 +197,7 @@ final class ContextTests: XCTestCase {
     // sometimes usefull but maybe harmful feature.
     // this feature may be removed in future.
     @MainActor
-    func testEventBinding() async {
+    func testEventBinding() async throws {
         let system = TestSystem()
         let context = Context(system: system)
 
@@ -186,16 +212,17 @@ final class ContextTests: XCTestCase {
         let task = Task {
             await context.runFeedbackLoop(state: binding)
         }
-        for _ in 0..<100 {
-            await Task.yield()
-        }
+
+        // wait feedback react to initialState
+        try await system.clock.sleep(untilSuspendBy: system.clock.getAutoId(index: 0))
+        try await system.clock.sleep(untilSuspendBy: system.clock.getAutoId(index: 1))
+        system.clock.advance(by: .seconds(1))
 
         let eventBinding = context.binding(base: binding)
         eventBinding.wrappedValue.count = 10
 
-        for _ in 0..<100 {
-            await Task.yield()
-        }
+        try await system.clock.sleep(untilSuspendBy: system.clock.getAutoId(index: 2))
+        try await system.clock.sleep(untilSuspendBy: system.clock.getAutoId(index: 3))
 
         do {
             let f1 = await system.feedbackCall1.value
@@ -234,7 +261,7 @@ final class ContextTests: XCTestCase {
     }
 
     @MainActor
-    func testFeedbackChain() async {
+    func testFeedbackChain() async throws {
         let system = TestFeedbackSystem()
         let context = Context(system: system)
 
@@ -250,9 +277,50 @@ final class ContextTests: XCTestCase {
             await context.runFeedbackLoop(state: binding)
         }
 
-        for _ in 0..<100 {
-            await Task.yield()
+        // only Feedback1 will react
+        try await system.clock.sleep(untilSuspendBy: system.clock.getAutoId(index: 0))
+
+        do {
+            let f1 = await system.feedbackCall1.value
+            let f2 = await system.feedbackCall2.value
+            let f3 = await system.feedbackCall3.value
+            let r = await system.reducerCall.value
+
+            XCTAssertEqual(f1, [initialState])
+            XCTAssertEqual(f2, [])
+            XCTAssertEqual(f3, [])
+
+            XCTAssertEqual(r.count, 0)
         }
+
+        // go next loop
+        system.clock.advance(by: .seconds(1))
+
+        // only Feedback2 will react
+        try await system.clock.sleep(untilSuspendBy: system.clock.getAutoId(index: 1))
+
+        do {
+            let f1 = await system.feedbackCall1.value
+            let f2 = await system.feedbackCall2.value
+            let f3 = await system.feedbackCall3.value
+            let r = await system.reducerCall.value
+
+            XCTAssertEqual(f1, [initialState])
+            XCTAssertEqual(f2, [TestFeedbackSystem.State(count: 10, message: "")])
+            XCTAssertEqual(f3, [])
+
+            XCTAssertEqual(r.count, 1)
+
+            let (s0, e0) = r[0]
+            XCTAssertEqual(s0, initialState)
+            XCTAssertEqual(e0, .setCount(10))
+        }
+
+        // go next loop
+        system.clock.advance(by: .seconds(1))
+
+        // only Feedback3 will react
+        try await system.clock.sleep(untilSuspendBy: system.clock.getAutoId(index: 2))
 
         do {
             let f1 = await system.feedbackCall1.value

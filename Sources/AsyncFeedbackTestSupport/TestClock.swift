@@ -2,7 +2,13 @@ import Foundation
 
 public final class TestClock: Clock, @unchecked Sendable {
     public struct Instant: InstantProtocol {
-        var offset: Duration = .zero
+        public static var zero: Instant { Instant(offset: .zero) }
+
+        public var offset: Duration
+
+        public init(offset: Duration) {
+            self.offset = offset
+        }
 
         public func advanced(by duration: Duration) -> Instant {
             Instant(offset: offset + duration)
@@ -34,6 +40,7 @@ public final class TestClock: Clock, @unchecked Sendable {
     public var minimumResolution: Duration = .zero
     public private(set) var now: Instant
 
+    private var noIdSleepCount = 0
     private var wakeUps: [AnyHashable: WakeUp] = [:]
     private let lock = NSLock()
 
@@ -45,6 +52,10 @@ public final class TestClock: Clock, @unchecked Sendable {
         lock.withLock {
             wakeUps.values.forEach { $0.continuation.finish() }
         }
+    }
+
+    public func getAutoId(index: Int) -> String {
+        "_auto_id_\(index)"
     }
 
     public func isSleeping<ID: Hashable>(id: ID) -> Bool {
@@ -65,7 +76,12 @@ public final class TestClock: Clock, @unchecked Sendable {
     }
 
     public func sleep(until deadline: Instant, tolerance: Duration? = nil) async throws {
-        try await sleep(id: UUID().uuidString, until: deadline, tolerance: tolerance)
+        let index = lock.withLock {
+            let count = noIdSleepCount
+            noIdSleepCount += 1
+            return count
+        }
+        return try await sleep(id: getAutoId(index: index), until: deadline, tolerance: tolerance)
     }
 
     public func sleep<ID: Hashable>(id: ID, until deadline: Instant, tolerance: Duration? = nil) async throws {
