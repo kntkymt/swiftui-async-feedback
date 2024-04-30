@@ -2,7 +2,6 @@ import XCTest
 import AsyncFeedback
 @testable import AsyncFeedbackTestSupport
 
-
 struct TestSystem: SystemProtocol {
     struct State {
         var count = 0

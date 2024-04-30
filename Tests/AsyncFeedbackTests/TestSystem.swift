@@ -1,4 +1,5 @@
 import AsyncFeedback
+import AsyncFeedbackTestSupport
 
 actor AtomicArray<T> {
     var value: [T]
@@ -23,6 +24,7 @@ struct TestSystem: SystemProtocol {
         case setMessage(String)
     }
 
+    let clock = TestClock(initialInstant: .zero)
     let reducerCall = AtomicArray<(State, Event)>([])
     let feedbackCall1 = AtomicArray<State>([])
     let feedbackCall2 = AtomicArray<State>([])
@@ -48,11 +50,13 @@ struct TestSystem: SystemProtocol {
         [
             Feedback(.filter { _ in true }) { state in
                 await feedbackCall1.append(state)
+                try? await clock.sleep(for: .seconds(1))
 
                 return nil
             },
             Feedback(.filter { _ in true }) { state in
                 await feedbackCall2.append(state)
+                try? await clock.sleep(for: .seconds(1))
 
                 return nil
             }

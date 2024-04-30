@@ -1,4 +1,5 @@
 import AsyncFeedback
+import AsyncFeedbackTestSupport
 
 struct TestFeedbackSystem: SystemProtocol {
     struct State: Equatable {
@@ -11,6 +12,7 @@ struct TestFeedbackSystem: SystemProtocol {
         case setMessage(String)
     }
 
+    let clock = TestClock(initialInstant: .zero)
     let reducerCall = AtomicArray<(State, Event)>([])
     let feedbackCall1 = AtomicArray<State>([])
     let feedbackCall2 = AtomicArray<State>([])
@@ -37,18 +39,21 @@ struct TestFeedbackSystem: SystemProtocol {
         [
             Feedback(.once) { state in
                 await feedbackCall1.append(state)
+                try? await clock.sleep(for: .seconds(1))
 
                 return .setCount(10)
             },
             Feedback(.onChanged(\.count)) { state in
                 guard state.count == 10 else { return nil }
                 await feedbackCall2.append(state)
+                try? await clock.sleep(for: .seconds(1))
 
                 return .setMessage("Hello")
             },
             Feedback(.onChanged(\.message)) { state in
                 guard state.message == "Hello" else { return nil }
                 await feedbackCall3.append(state)
+                try? await clock.sleep(for: .seconds(1))
 
                 return nil
             }
